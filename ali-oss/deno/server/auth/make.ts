@@ -5,7 +5,6 @@ interface I_make_auth_opts {
   key_id: string
   key_secret: string
 
-  md5: string // ''
   date: string // new Date().toUTCString()
 
   resource: {
@@ -29,7 +28,7 @@ async function make(opts: I_make_auth_opts) {
     encodeBase64(
       await hmac_sha1(
         opts.key_secret,
-        `PUT\n${opts.md5}\napplication/octet-stream\n${opts.date}\n${
+        `PUT\n\napplication/octet-stream\n${opts.date}\nx-oss-date:${opts.date}\n${
           make_canonicalized(opts.resource.bucket, opts.resource.object)
         }`
       )

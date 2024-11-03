@@ -5,8 +5,62 @@
   </head>
 
   <body>
+
+    <input type="file">
+    <button onclick="upload()">Upload</button>
+    
+    <ul id="uploaded"></ul>
+
     <script>
-      console.log('hello, world')
+      async function upload() {
+        /** @type {File|undefined} */
+        const file = document.querySelector('input[type=file]')
+          .files[0]
+        if (!file)
+          return alert('no file selected')
+
+        const filename = file.name.split('.')
+        const suffix = filename.length > 1
+          ? ('.' + filename.at(-1)) // .jpg .png .mp3
+          : ''
+
+        const auth = await make_auth(suffix)
+        await upload2oss(file, auth)
+        append_uploaded(file.name, auth.url)
+      }
+      
+      async function make_auth(suffix) {
+        return await (
+          await fetch('/api/auth', {
+            method: 'POST',
+            body: JSON.stringify({ suffix }),
+          })
+        ).json()
+      }
+
+      /**
+       * @param {File} file
+       * @param {{ date: string, signature: string, url: string }} auth
+       */
+      async function upload2oss(file, auth) {
+        await fetch(auth.url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'x-oss-date': auth.date, // Date 不行，巨坑
+            'Authorization': auth.signature, // not Authentication!!!
+          },
+          body: file,
+        })
+      }
+
+      function append_uploaded(filename, link) {
+        const li = document.createElement('li')
+        li.innerHTML = `
+          <a href='${link}'>${filename}</a>
+        `
+        document.getElementById('uploaded').appendChild(li)
+      }
     </script>
   </body>
 </html>
